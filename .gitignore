@@ -12,3 +12,4 @@ cover_db
 *.swo
 MANIFEST.SKIP
 .shipit
+client.pl

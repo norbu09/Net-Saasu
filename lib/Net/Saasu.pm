@@ -48,14 +48,43 @@ has 'file_id' => (is => 'rw', isa => 'Str');
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
+A very basic interface to saasu, an online accounting system
+(L<http://saasu.com>). This may morph into a more complete interface
+over time but for the moment this basic implementation abstracts
+everything we need. Detaild API documentation can be found on the saasu
+page (L<http://help.saasu.com/api/>).
+    
+    my $saasu = Net::Saasu->new(
+        key     => 'API KEY',
+        file_id => 12345,
+        debug   => 1
+    );
 
-Perhaps a little code snippet.
+Example from the saasu docs for a POST request:
 
-    use Net::Saasu;
+    my $hash = {
+        tasks => {
+            insertTransactionCategory => {
+                transactionCategory => {
+                    -uid     => 0,
+                    type           => 'Income',
+                    name           => 'Consulting Fees',
+                    isActive       => 'true',
+                    ledgerCode     => 'IT001',
+                    defaultTaxCode => 'G1',
+                }
+            } 
+        } 
+    };
 
-    my $foo = Net::Saasu->new();
-    ...
+    $saasu->post($hash);
+    if ( my $list = $saasu->post( $hash )){
+        print Dumper($list);
+    }
+    else {
+        print Dumper($saasu->error);
+        $saasu->clear_error;
+    }
 
 =head1 SUBROUTINES/METHODS
 
@@ -66,7 +95,8 @@ Call saasu in get mode and pull data. Decodes the data and returns a
 nice perl hash. In case of an error the error response is set in
 $self->error and we return nothing.
     
-    if(my $result = $saasu->get(Command, %params)){
+    my $params = { IsActive => 1 };
+    if(my $result = $saasu->get(Command, $params)){
         # do something with $result
     } else {
         # you got an error in $saasu->error
@@ -99,7 +129,6 @@ sub get {
     return $self->_talk($url, 'GET');
 }
 
-
 =head2 post
 
 Push some data to saasu.
@@ -119,6 +148,27 @@ sub post {
     return $self->_talk($url, 'POST', $payload);
 }
 
+=head2 delete
+
+Delete an object in saasu
+
+=cut
+
+sub delete {
+    my ($self, $command, $id) = @_;
+
+    my $url =
+          $self->api_url
+        . $command
+        . '?WSAccessKey='
+        . $self->key
+        . '&FileUid='
+        . $self->file_id . '&uid='
+        . $id;
+
+    return $self->_talk($url, 'DELETE');
+
+}
 
 =head2 _talk
 
@@ -130,24 +180,26 @@ sub _talk {
     my ($self, $url, $mode, $payload) = @_;
 
     my $req = HTTP::Request->new($mode, $url);
-    if($mode eq 'POST'){
+    if ($mode eq 'POST') {
         $req->content($self->xml->write($payload));
-        $req->header('Content-Type' => 'application/x-www-form-urlencoded; charset=utf-8');
+        $req->header('Content-Type' =>
+                'application/x-www-form-urlencoded; charset=utf-8');
     }
     print STDERR $req->as_string if $self->debug;
 
     my $res = $self->ua->request($req);
 
-    if($res->is_success){
+    if ($res->is_success) {
         my $hash = $self->xml->parse($res->decoded_content);
-        if(exists $hash->{errors}){
+        if (exists $hash->{errors}) {
             $self->error($hash->{errors});
             return;
-        } else {
+        }
+        else {
             return $hash;
         }
     }
-    $self->error({ http_error => $res->status_line, code => $res->code});
+    $self->error({ http_error => $res->status_line, code => $res->code });
     return;
 }
 
@@ -175,9 +227,9 @@ You can also look for information at:
 
 =over 4
 
-=item * RT: CPAN's request tracker (report bugs here)
+=item * Github Issues: (report bugs here)
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Net-Saasu>
+L<https://github.com/norbu09/Net-Saasu/issues>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 

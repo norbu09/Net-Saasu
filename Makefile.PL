@@ -8,16 +8,15 @@ all_from 'lib/Net/Saasu.pm';
 author   q{Lenz Gschwendtner <norbu09@cpan.org>};
 license  'artistic2';
 
-perl_version 5.006;
+perl_version 5.010;
 
 tests_recursive('t');
 
 resources (
-   #homepage   => 'http://yourwebsitehere.com',
-   #IRC        => 'irc://irc.perl.org/#Net-Saasu',
+   homepage   => 'http://springtimesoft.com/lenz',
    license    => 'http://www.perlfoundation.org/artistic_license_2_0',
-   #repository => 'git://github.com/Lenz Gschwendtner/Net-Saasu.git',
-   bugtracker => 'http://rt.cpan.org/NoAuth/Bugs.html?Dist=Net-Saasu',
+   repository => 'git://github.com/norbu09/Net-Saasu.git',
+   bugtracker => 'https://github.com/norbu09/Net-Saasu/issues',
 );
 
 configure_requires (
@@ -29,8 +28,9 @@ build_requires (
 );
 
 requires (
-   #'ABC'              => 1.6,
-   #'Foo::Bar::Module' => 5.0401,
+    'Any::Moose',
+    'LWP::UserAgent',
+    'XML::TreePP',
 );
 
 install_as_cpan;

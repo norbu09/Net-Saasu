@@ -2,8 +2,8 @@ package Net::Saasu;
 
 use 5.010;
 use Any::Moose;
-use XML::Simple;    # yes, i know grant hates me for using it ...
 use LWP::UserAgent;
+use XML::TreePP;
 
 =head1 NAME
 
@@ -21,6 +21,11 @@ has 'api_url' => (
     is      => 'rw',
     isa     => 'Str',
     default => 'https://secure.saasu.com/webservices/rest/r1/',
+);
+has 'xml' => (
+    is      => 'rw',
+    isa     => 'XML::TreePP',
+    default => sub { new XML::TreePP },
 );
 has 'ua' => (
     is      => 'rw',
@@ -91,9 +96,50 @@ sub get {
         }
     }
     $url .= '&' . join('&', @args);
-    my $res = $self->ua->get($url);
+    return $self->_talk($url, 'GET');
+}
+
+
+=head2 post
+
+Push some data to saasu.
+
+=cut
+
+sub post {
+    my ($self, $payload) = @_;
+
+    my $url =
+          $self->api_url
+        . 'tasks?WSAccessKey='
+        . $self->key
+        . '&FileUid='
+        . $self->file_id;
+
+    return $self->_talk($url, 'POST', $payload);
+}
+
+
+=head2 _talk
+
+INTERNAL: Talk to the web service
+
+=cut
+
+sub _talk {
+    my ($self, $url, $mode, $payload) = @_;
+
+    my $req = HTTP::Request->new($mode, $url);
+    if($mode eq 'POST'){
+        $req->content($self->xml->write($payload));
+        $req->header('Content-Type' => 'application/x-www-form-urlencoded; charset=utf-8');
+    }
+    print STDERR $req->as_string if $self->debug;
+
+    my $res = $self->ua->request($req);
+
     if($res->is_success){
-        my $hash = XMLin($res->decoded_content);
+        my $hash = $self->xml->parse($res->decoded_content);
         if(exists $hash->{errors}){
             $self->error($hash->{errors});
             return;

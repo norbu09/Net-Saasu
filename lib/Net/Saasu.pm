@@ -181,6 +181,9 @@ sub _talk {
 
     my $req = HTTP::Request->new($mode, $url);
     if ($mode eq 'POST') {
+        $payload = { tasks => $payload }
+            unless exists $payload->{tasks};
+        $self->xml->set( first_out => [ 'layout', 'status' ] );
         $req->content($self->xml->write($payload));
         $req->header('Content-Type' =>
                 'application/x-www-form-urlencoded; charset=utf-8');

@@ -11,11 +11,11 @@ Net::Saasu - Interface to the Saasu online accounting platform!
 
 =head1 VERSION
 
-Version 0.1
+Version 0.2.2.2.2.2.1
 
 =cut
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 has 'api_url' => (
     is      => 'rw',

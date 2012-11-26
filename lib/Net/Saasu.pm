@@ -39,7 +39,7 @@ has 'debug' => (
 );
 has 'error' => (
     is        => 'rw',
-    isa       => 'HashRef',
+    isa       => 'Str',
     predicate => 'has_error',
     clearer   => 'clear_error',
 );

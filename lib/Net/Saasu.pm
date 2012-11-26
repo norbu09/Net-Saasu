@@ -11,11 +11,11 @@ Net::Saasu - Interface to the Saasu online accounting platform!
 
 =head1 VERSION
 
-Version 0.2.2.2.2.2.1
+Version 0.3
 
 =cut
 
-our $VERSION = '0.2';
+our $VERSION = '0.3';
 
 has 'api_url' => (
     is      => 'rw',
@@ -179,30 +179,44 @@ INTERNAL: Talk to the web service
 sub _talk {
     my ($self, $url, $mode, $payload) = @_;
 
+    # start fresh: clean previous errors
+    $self->clear_error;
+
     my $req = HTTP::Request->new($mode, $url);
     if ($mode eq 'POST') {
         $payload = { tasks => $payload }
             unless exists $payload->{tasks};
-        $self->xml->set( first_out => [ 'layout', 'status' ] );
-        $req->content($self->xml->write($payload));
+        $self->xml->set(first_out => [ 'layout', 'status' ]);
+        my $xml;
+        eval { $xml = $self->xml->write($payload); };
+        my $err = $@;
+        if ($err) {
+            $self->error($err);
+            return;
+        }
+        eval { $req->content($xml); };
+        $err = $@;
+        if ($err) {
+            $self->error($err);
+            return;
+        }
         $req->header('Content-Type' =>
                 'application/x-www-form-urlencoded; charset=utf-8');
     }
-    print STDERR $req->as_string if $self->debug;
+    print STDERR __PACKAGE__ . ": " . $req->as_string if $self->debug;
 
     my $res = $self->ua->request($req);
 
     if ($res->is_success) {
         my $hash = $self->xml->parse($res->decoded_content);
-        if (exists $hash->{errors}) {
-            $self->error($hash->{errors});
-            return;
-        }
-        else {
-            return $hash;
-        }
+
+        return $hash unless (exists $hash->{errors});
+
+        $self->error($hash->{errors});
+        return;
     }
-    $self->error({ http_error => $res->status_line, code => $res->code });
+
+    $self->error($res->status_line);
     return;
 }
 
